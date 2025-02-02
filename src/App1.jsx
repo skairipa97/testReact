@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Send, Search, Moon, Sun } from 'lucide-react';
+import React, { useState,useRef, useEffect, useCallback } from 'react';
+import { Send, Search, Moon, Sun, Phone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+
 
 const App1 = () => {
   const [selectedChat, setSelectedChat] = useState(null);
@@ -10,7 +11,16 @@ const App1 = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [otherUser, setOtherUser] = useState(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const messagesEndRef = useRef(null);
   const navigate = useNavigate();
+  const convoId=1
+
+const scrollToBottom = () => {
+  messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+};
+useEffect(() => {
+  scrollToBottom();
+}, [selectedChat?.messages]); // Scroll when messages update
 
   useEffect(() => {
     const userStr = localStorage.getItem("user");
@@ -26,11 +36,11 @@ const App1 = () => {
     const currentUserId = currentUser?.id;
     if (!currentUserId) return;
     console.log(currentUserId);
-
-    fetch(`http://localhost:8082/testReact/convo?conversation=1&userId=${currentUserId}`)// CONVERSATION KHAS TDOUZ F URL 
+// console.log(selectedChat.id)
+    fetch(`http://localhost:8082/testReact/convo?conversation=${convoId}&userId=${currentUserId}`)// CONVERSATION KHAS TDOUZ F URL 
       .then((response) => response.json())
       .then((data) => {
-        const conversationData = data[`conversation_${currentUserId}`];
+        const conversationData = data[`conversation_${convoId}`];
         if (!conversationData) return;
 
         const { messages, users } = conversationData;
@@ -89,7 +99,7 @@ const App1 = () => {
       .catch((error) => {
         console.error('Erreur lors du chargement:', error);
       });
-  }, [currentUser?.id, selectedChat]);
+  }, [currentUser?.id, selectedChat?.id]);
 
   useEffect(() => {
     fetchConversationData();
@@ -100,18 +110,23 @@ const App1 = () => {
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
   };
+  const handleCall = () => {
+    console.log('Initiating call...');
+    // Implement call functionality here
+  };
 
-  const handleSendMessage = async (e) => {
+    const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!message.trim() || !selectedChat || !otherUser) return;
+    if (!message.trim() || !selectedChat) return;
 
+    // Prepare message payload matching the Java backend Message structure
     const newMessagePayload = {
       fromuser: currentUser.id,
       touser: otherUser.id,
       contenu: message,
-      date_envoi: new Date(),
+      date_envoi: new Date(), // Will be set by server
       lu: false,
-      conversation: selectedChat.id
+      conversation: convoId
     };
 
     try {
@@ -124,22 +139,25 @@ const App1 = () => {
       });
 
       if (response.ok) {
+        // Clear message input
         setMessage("");
-        // Fetch updated conversation data after sending message
+        
+        // Immediately fetch updated conversation data
         fetchConversationData();
       } else {
         console.error("Failed to send message");
       }
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Erreur:", error);
     }
   };
+
 
   const filteredConversations = conversations.filter((conv) =>
     conv.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-
+console.log(currentUser,otherUser)
   if (!currentUser || !otherUser) {
     return (
       <div className={`flex h-screen items-center justify-center ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
@@ -255,9 +273,18 @@ return (
                     Dernière connexion: {new Date(otherUser.derniere_connexion).toLocaleString()}
                   </span>
                 )}
-              </div>
-            </div>
+              </div><div><button
+                onClick={handleCall}
+                className={`fixed top-4 right-16 z-50 p-2 rounded-full 
+                ${isDarkMode 
+                  ? 'bg-green-700 text-gray-100 hover:bg-green-600' 
+                  : 'bg-green-500 text-white hover:bg-green-600'}`}
+              >
+                <Phone size={20} />
+              </button></div>
 
+            </div>
+             
             {/* Messages area */}
             <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
               {selectedChat.messages.map((msg) => (
@@ -282,6 +309,7 @@ return (
                   </div>
                 </div>
               ))}
+              <div ref={messagesEndRef} />
             </div>
 
             {/* Message input */}

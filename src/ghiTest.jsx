@@ -15,7 +15,7 @@ const ChatApp = () => {
 
   // Fetch conversation data
   const fetchConversationData = useCallback(() => {
-    fetch(`http://localhost:8082/testReact/convo?conversation=${convoId}`)
+    fetch(`http://localhost:8082/testReact/convo?conversation=1&userId=${currentUserId}`)
       .then((response) => response.json())
       .then((data) => {
         const conversationData = data[`conversation_${convoId}`];
