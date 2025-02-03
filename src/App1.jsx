@@ -15,12 +15,19 @@ const App1 = () => {
   const navigate = useNavigate();
   const convoId=1
 
-const scrollToBottom = () => {
-  messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-};
+  const scrollToBottom = () => {
+    const messagesContainer = messagesEndRef.current?.parentElement;
+    if (messagesContainer) {
+      const isNearBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop <= messagesContainer.clientHeight + 100; 
+      if (isNearBottom) {
+        messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+  };
+  
 useEffect(() => {
   scrollToBottom();
-}, [selectedChat?.messages]); // Scroll when messages update
+}, [selectedChat?.messages]);
 
   useEffect(() => {
     const userStr = localStorage.getItem("user");
@@ -56,7 +63,6 @@ useEffect(() => {
           ...user
         }));
 
-        // Set current and other user
         const currentUserData = usersArray.find(user => user.id === currentUserId);
         const otherUserData = usersArray.find(user => user.id !== currentUserId);
         setCurrentUser(currentUserData);
@@ -103,7 +109,7 @@ useEffect(() => {
 
   useEffect(() => {
     fetchConversationData();
-    const interval = setInterval(fetchConversationData, 2000); // 2s
+    const interval = setInterval(fetchConversationData, 1000); // 1s
     return () => clearInterval(interval);
   }, [fetchConversationData]);
 
@@ -111,8 +117,7 @@ useEffect(() => {
     setIsDarkMode(!isDarkMode);
   };
   const handleCall = () => {
-    console.log('Initiating call...');
-    // Implement call functionality here
+         // CALL 
   };
 
     const handleSendMessage = async (e) => {
@@ -124,7 +129,7 @@ useEffect(() => {
       fromuser: currentUser.id,
       touser: otherUser.id,
       contenu: message,
-      date_envoi: new Date(), // Will be set by server
+      date_envoi: new Date(), 
       lu: false,
       conversation: convoId
     };
@@ -139,10 +144,7 @@ useEffect(() => {
       });
 
       if (response.ok) {
-        // Clear message input
         setMessage("");
-        
-        // Immediately fetch updated conversation data
         fetchConversationData();
       } else {
         console.error("Failed to send message");
